@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Oscar’s Website</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <h1>Hello, I’m Oscar 👋</h1>
+    <p>Welcome to my personal website!</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>About Me</h2>
+      <p>I study empirical economics at Waseda University. I love data, policy, and creative research.</p>
+    </section>
+
+    <section>
+      <h2>Projects</h2>
+      <ul>
+        <li>Public Space Friendliness Study (Tokyo)</li>
+        <li>ESG Investment & Governance Analysis</li>
+        <li>Comparative Political Economy Essay</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Contact</h2>
+      <p>Email: yourname@email.com</p>
+    </section>
+  </main>
+
+  <footer>
+    <small>© 2025 Oscar Zhao</small>
+  </footer>
+</body>
+</html>
+
