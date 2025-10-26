@@ -4,4 +4,17 @@ main { max-width: 800px; margin: 30px auto; padding: 0 20px; background: #fff; b
 h1, h2 { color: #222; }
 ul { list-style: none; padding: 0; }
 ul li { padding: 4px 0; }
-<a href="China’s%20NGO%20Localization%20Development-20251022_235703.pptx" class="btn" download>📂 View Presentation</a>
+.btn {
+  display: inline-block;
+  padding: 10px 16px;
+  background-color: #007acc;
+  color: white;
+  border-radius: 8px;
+  text-decoration: none;
+  font-weight: bold;
+  margin-top: 12px;
+}
+.btn:hover {
+  background-color: #005fa3;
+}
+
