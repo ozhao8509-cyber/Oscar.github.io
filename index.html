@@ -67,11 +67,11 @@
   <style>
     :root{
       --bg:#f7f7f7; --ink:#111827; --muted:#6b7280; --card:#ffffff; --line:#e5e7eb;
-      --accent:#2563eb;
+      --accent:#2563eb; --accent-2:#0ea5e9;
     }
     body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
     .wrap{ max-width: 980px; margin: 32px auto; padding: 0 16px; }
-    h1{ font-size: 36px; margin: 0 0 10px; }
+    h1{ font-size: 32px; margin: 0 0 10px; }
     p.muted{ color:var(--muted); margin-top:6px; }
     .panel{ display:grid; grid-template-columns: 1.1fr .9fr; gap: 16px; margin: 18px 0; }
     .card{
@@ -88,31 +88,36 @@
       background:var(--accent); color:#fff; border:0; padding:10px 14px; border-radius:10px;
       cursor:pointer;
     }
+    button.secondary{ background:var(--accent-2); }
     button:hover{ filter:brightness(1.07); }
 
     table{ width:100%; border-collapse:collapse; margin-top:6px; }
     th,td{ padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
     th{ font-weight:600; }
 
-    #chartWrap, #sensWrap, #diffWrap{
+    #chartWrap, #sensWrap, #diffWrap, #mcWrap{
       background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px;
     }
 
     @media (max-width: 900px){ .panel{ grid-template-columns: 1fr; } }
+    .stat{ display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px; }
+    .stat .tile{ background:#fafafa; border:1px solid var(--line); border-radius:10px; padding:10px; }
+    .stat .k{ font-size:12px; color:var(--muted); }
+    .stat .v{ font-weight:600; font-size:18px; }
   </style>
 </head>
 <body>
   <div class="wrap">
     <h1>Sequential Consumer Game (Browser Version)</h1>
-    <p class="muted">Adjust rounds, initial price, and marketing, then run. Includes competitor, influencer, supplier, investor, and market trend roles. Everything runs client-side on GitHub Pages.</p>
+    <p class="muted">Adjust rounds, price, and marketing; includes competitor, influencer, supplier, investor, and market trend roles. Everything runs client-side on GitHub Pages.</p>
 
     <!-- Controls + Last Round Summary -->
     <div class="panel">
       <div class="card">
         <div class="row">
           <div style="flex:1">
-            <label>Rounds: <span id="roundsVal">12</span></label>
-            <input id="rounds" type="range" min="5" max="60" value="12" oninput="roundsVal.textContent=this.value">
+            <label>Rounds: <span id="roundsVal">20</span></label>
+            <input id="rounds" type="range" min="5" max="100" value="20" oninput="roundsVal.textContent=this.value">
           </div>
           <div style="flex:1">
             <label>Start Price: <span id="priceVal">9.5</span></label>
@@ -125,7 +130,7 @@
             <label>Start Marketing: <span id="mktVal">0.60</span></label>
             <input id="startMkt" type="range" min="0" max="1" step="0.01" value="0.60" oninput="mktVal.textContent=this.value">
           </div>
-          <div>
+          <div class="row">
             <button onclick="runSim()">Run Simulation</button>
           </div>
         </div>
@@ -201,11 +206,37 @@
     <!-- Main Chart -->
     <div id="chartWrap"><canvas id="chart" height="140"></canvas></div>
 
+    <!-- Monte Carlo Averaging -->
+    <div class="card" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between;">
+        <div><b>Monte Carlo Averaging (reduce randomness)</b></div>
+        <div class="muted">Runs multiple simulations with current settings; shows mean profit per round and ±1σ band.</div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <div>
+          <label>Runs (R)</label>
+          <input id="mcRuns" type="number" min="5" max="500" step="5" value="60">
+        </div>
+        <button class="secondary" onclick="runMonteCarlo()">Run Monte Carlo</button>
+      </div>
+
+      <div class="stat" style="margin-top:10px">
+        <div class="tile"><div class="k">Mean of Avg Profit</div><div class="v" id="mcMean">—</div></div>
+        <div class="tile"><div class="k">Std of Avg Profit</div><div class="v" id="mcStd">—</div></div>
+        <div class="tile"><div class="k">5th Percentile</div><div class="v" id="mcP05">—</div></div>
+        <div class="tile"><div class="k">95th Percentile</div><div class="v" id="mcP95">—</div></div>
+      </div>
+
+      <div id="mcWrap" style="margin-top:10px">
+        <canvas id="mcChart" height="140"></canvas>
+      </div>
+    </div>
+
     <!-- Round Analyzer -->
     <div class="card" style="margin-top:14px">
       <div class="row" style="justify-content:space-between;">
         <div><b>Round Analyzer</b></div>
-        <div class="muted">Choose a round as the baseline; we’ll compute differences to all other rounds and highlight it.</div>
+        <div class="muted">Choose a round as the baseline; we compute differences to all other rounds and highlight it.</div>
       </div>
       <div class="row" style="margin-top:10px">
         <div>
@@ -219,15 +250,14 @@
       </div>
     </div>
 
-    <!-- Sensitivity Analysis -->
+    <!-- Sensitivity Analysis (kept) -->
     <div class="card" style="margin-top:14px">
       <div class="row" style="justify-content:space-between;">
         <div><b>Sensitivity Analysis</b></div>
-        <div class="muted">Runs multiple simulations to estimate average profit when each role’s parameter is varied (low/mid/high).</div>
+        <div class="muted">Varies key role parameters (low/mid/high), averages 20 runs per scenario, and compares average profit.</div>
       </div>
       <div class="row" style="margin-top:10px">
         <button onclick="runSensitivity()">Run Sensitivity</button>
-        <div class="muted">Averages 20 runs per scenario for stability.</div>
       </div>
       <div id="sensWrap" style="margin-top:10px"><canvas id="sensChart" height="140"></canvas></div>
     </div>
@@ -249,6 +279,18 @@
     const rand = (a,b) => Math.random()*(b-a)+a;
     const choice = arr => arr[Math.floor(Math.random()*arr.length)];
     const mean = arr => arr.reduce((a,b)=>a+b,0) / (arr.length || 1);
+    const std = arr => {
+      const m = mean(arr);
+      const v = mean(arr.map(x => (x-m)*(x-m)));
+      return Math.sqrt(v);
+    };
+    const quantile = (arr, q) => {
+      const a = [...arr].sort((x,y)=>x-y);
+      const idx = (a.length-1)*q;
+      const lo = Math.floor(idx), hi = Math.ceil(idx);
+      if (lo === hi) return a[lo];
+      return a[lo] + (a[hi]-a[lo])*(idx-lo);
+    };
 
     class Segment {
       constructor(name, priceSens, mktSens, base=0.3){
@@ -298,12 +340,11 @@
         }
 
         const effMarketing = useInfluencer ? clamp(marketing + buzzStrength*(totalBuyersPrev/200), 0, 2) : marketing;
-
         const supplierCost = useSupplier ? clamp(supplierMean + rand(-supplierVol, supplierVol), 0, 10) : 0;
 
         let total=0; const segRows=[];
         for(const seg of segments){
-          const relPricePenalty = useCompetitor ? (price - competitorPrice)* (1 + compIntensity*10) : price;
+          const relPricePenalty = useCompetitor ? (price - competitorPrice)*(1 + compIntensity*10) : price;
           const prob = seg.buyProb(price, effMarketing, relPricePenalty, trendEffect);
           let buyers=0; for(let i=0;i<100;i++){ if(Math.random()<prob) buyers++; }
           segRows.push({ name:seg.name, prob, buyers });
@@ -333,22 +374,18 @@
       return out;
     }
 
-    // ---------- Globals for charts ----------
-    let mainChart, sensChart, diffChart;
-    let lastResult = null;     // holds the most recent simulation result
-    let lastParams = null;     // holds the most recent params so sensitivity can reuse rounds length
+    // ---------- Globals ----------
+    let mainChart, sensChart, diffChart, mcChart;
+    let lastResult = null;
+    let lastParams = null;
 
-    // ---------- Rendering (main run) ----------
+    // ---------- Rendering (main) ----------
     function renderChart(data, selectedIndex = null){
       const ctx = document.getElementById('chart').getContext('2d');
       const labels = data.profit.map((_,i)=>`Round ${i+1}`);
-
-      // Highlight the selected round with a bigger point radius
       const pointR = data.profit.map((_,i)=> (i===selectedIndex ? 6 : 2));
-      const pointB = data.profit.map((_,i)=> (i===selectedIndex ? '#111827' : undefined));
-
       const ds = [
-        { label:"Profit", data:data.profit, yAxisID:'y', pointRadius: pointR, pointBackgroundColor: pointB },
+        { label:"Profit", data:data.profit, yAxisID:'y', pointRadius: pointR },
         { label:"Total Buyers", data:data.buyers, yAxisID:'y1' },
       ];
       if(mainChart) mainChart.destroy();
@@ -419,32 +456,21 @@
     function runSim(){
       const params = collectParamsFromUI();
       const result = simulate(params);
-      lastResult = result;
-      lastParams = params;
-
+      lastResult = result; lastParams = params;
       renderChart(result, null);
       renderSummary(result);
       populateRoundSelector(result.profit.length);
-
-      // clear diff chart if exists
-      if(diffChart){ diffChart.destroy(); diffChart = null; }
+      if(diffChart){ diffChart.destroy(); diffChart=null; }
     }
 
     // ---------- Round Analyzer ----------
     function analyzeSelectedRound(){
       if(!lastResult) return;
-
       const baseIdx = +document.getElementById('roundSelect').value;
-      const pr = lastResult.profit;
-      const brs = lastResult.buyers;
-
+      const pr = lastResult.profit, brs = lastResult.buyers;
       const diffProfit = pr.map((v)=> v - pr[baseIdx]);
       const diffBuyers = brs.map((v)=> v - brs[baseIdx]);
-
-      // Update main chart highlight
       renderChart(lastResult, baseIdx);
-
-      // Render differences chart
       const ctx = document.getElementById('diffChart').getContext('2d');
       const labels = pr.map((_,i)=>`R${i+1}`);
       if(diffChart) diffChart.destroy();
@@ -453,21 +479,99 @@
         data:{
           labels,
           datasets:[
-            { label:`Δ Profit vs Round ${baseIdx+1}`, data: diffProfit },
-            { label:`Δ Buyers vs Round ${baseIdx+1}`, data: diffBuyers }
+            { label:`Δ Profit vs R${baseIdx+1}`, data: diffProfit },
+            { label:`Δ Buyers vs R${baseIdx+1}`, data: diffBuyers }
           ]
         },
         options:{
           responsive:true,
           plugins:{ legend:{ position:'top' } },
-          scales:{
-            y:{ title:{ display:true, text:'Difference' } }
-          }
+          scales:{ y:{ title:{ display:true, text:'Difference' } } }
         }
       });
     }
 
-    // ---------- Sensitivity Analysis (unchanged from earlier) ----------
+    // ---------- Monte Carlo (NEW) ----------
+    function runMonteCarlo(){
+      const R = Math.max(5, Math.min(500, +document.getElementById('mcRuns').value || 60));
+      const base = collectParamsFromUI();
+      const rounds = base.rounds;
+
+      // accumulate per-round sums and sums of squares
+      const sum = Array(rounds).fill(0);
+      const sumsq = Array(rounds).fill(0);
+      const perRunAvg = []; // average profit per run
+
+      for(let r=0; r<R; r++){
+        const res = simulate(base);
+        const avgP = mean(res.profit);
+        perRunAvg.push(avgP);
+        for(let i=0;i<rounds;i++){
+          const p = res.profit[i];
+          sum[i] += p; sumsq[i] += p*p;
+        }
+      }
+
+      const meanPerRound = sum.map(v => v / R);
+      const stdPerRound  = sumsq.map((v,i) => Math.sqrt(Math.max(0, v/R - meanPerRound[i]*meanPerRound[i])));
+
+      // Overall stats on "average profit per run"
+      const mcMean = mean(perRunAvg);
+      const mcStd  = std(perRunAvg);
+      const mcP05  = quantile(perRunAvg, 0.05);
+      const mcP95  = quantile(perRunAvg, 0.95);
+
+      // update tiles
+      document.getElementById('mcMean').textContent = mcMean.toFixed(2);
+      document.getElementById('mcStd').textContent  = mcStd.toFixed(2);
+      document.getElementById('mcP05').textContent  = mcP05.toFixed(2);
+      document.getElementById('mcP95').textContent  = mcP95.toFixed(2);
+
+      // render mean ±1σ band chart
+      const upper = meanPerRound.map((m,i)=> m + stdPerRound[i]);
+      const lower = meanPerRound.map((m,i)=> m - stdPerRound[i]);
+      const labels = meanPerRound.map((_,i)=>`Round ${i+1}`);
+
+      const ctx = document.getElementById('mcChart').getContext('2d');
+      if(mcChart) mcChart.destroy();
+
+      // trick: draw lower first, then upper filled to previous, then mean line on top
+      mcChart = new Chart(ctx, {
+        type:'line',
+        data:{
+          labels,
+          datasets:[
+            {
+              label:'-1σ',
+              data: lower,
+              borderColor: 'rgba(0,0,0,0)',
+              backgroundColor: 'rgba(37, 99, 235, 0.10)', // fill color
+            },
+            {
+              label:'+1σ',
+              data: upper,
+              borderColor: 'rgba(0,0,0,0)',
+              backgroundColor: 'rgba(37, 99, 235, 0.10)',
+              fill: '-1' // fill to the previous dataset (lower)
+            },
+            {
+              label:'Mean Profit (per round)',
+              data: meanPerRound,
+              borderColor: '#2563eb',
+              pointRadius: 2,
+            }
+          ]
+        },
+        options:{
+          responsive:true,
+          interaction:{ mode:'index', intersect:false },
+          plugins:{ legend:{ position:'top' } },
+          scales:{ y:{ title:{ display:true, text:'Profit' } } }
+        }
+      });
+    }
+
+    // ---------- Sensitivity Analysis (kept) ----------
     function simulateAvgProfit(params, repeats=20){
       const profits = [];
       for(let i=0;i<repeats;i++){
@@ -477,11 +581,8 @@
       return mean(profits);
     }
 
-    let sensChartRef = null;
     function runSensitivity(){
-      if(!lastParams) lastParams = collectParamsFromUI();
-      const base = { ...lastParams };
-
+      const base = collectParamsFromUI();
       const compVals = [0.00, 0.04, 0.08];
       const buzzVals = [0.00, 0.15, 0.30];
       const suppMeanVals = [0.6, 1.0, 1.4];
@@ -542,6 +643,7 @@
   </script>
 </body>
 </html>
+
 
 
 
