@@ -55,185 +55,329 @@
     </section>
   </main>
       <a href="china-ngo-localization-20251022.pptx" class="btn" download>📂 View Presentation</a>
-<link rel="preconnect" href="https://cdn.jsdelivr.net">
-<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Sequential Consumer Game (Browser Version)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1"></script>
 
-<style>
-  .wrap { max-width: 900px; margin: 40px auto; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto; }
-  .panel { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-  .card { 
-    background:#111827; 
-    color:#f9fafb;            /* brighter text color */
-    padding:16px; 
-    border-radius:14px; 
-    box-shadow:0 6px 20px rgba(0,0,0,.15); 
-  }
+  <style>
+    :root{
+      --bg:#f7f7f7; --ink:#111827; --muted:#6b7280; --card:#ffffff; --line:#e5e7eb;
+      --accent:#2563eb;
+    }
+    body{ margin:0; background:var(--bg); color:var(--ink); font:16px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
+    .wrap{ max-width: 980px; margin: 32px auto; padding: 0 16px; }
+    h1{ font-size: 36px; margin: 0 0 10px; }
+    p.muted{ color:var(--muted); margin-top:6px; }
+    .panel{ display:grid; grid-template-columns: 1.1fr .9fr; gap: 16px; margin: 18px 0; }
+    .card{
+      background:var(--card); color:var(--ink); padding:16px; border-radius:14px;
+      box-shadow:0 8px 24px rgba(0,0,0,.08); border:1px solid var(--line);
+    }
+    label{ display:block; font-size:14px; margin:10px 0 4px; }
+    input[type="range"]{ width:100%; }
+    input[type="number"]{ width:120px; padding:6px 8px; border:1px solid var(--line); border-radius:8px;}
+    .row{ display:flex; gap:12px; align-items:center; flex-wrap:wrap; }
+    .row > div{ display:flex; align-items:center; gap:8px; }
+    .switch{ display:flex; align-items:center; gap:8px; margin-top:8px; }
+    button{
+      background:var(--accent); color:#fff; border:0; padding:10px 14px; border-radius:10px;
+      cursor:pointer;
+    }
+    button:hover{ filter:brightness(1.07); }
 
-  td, th { 
-    padding:8px; 
-    border-bottom:1px solid #1f2937; 
-    text-align:left; 
-    color:#f9fafb;            /* brighter text for table */
-  }
+    /* table styles */
+    table{ width:100%; border-collapse:collapse; margin-top:6px; }
+    th,td{ padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
+    th{ font-weight:600; }
+    #chartWrap{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px; }
 
-  b { color:#ffffff; }        /* make bold headers white */
+    @media (max-width: 900px){ .panel{ grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Sequential Consumer Game (Browser Version)</h1>
+    <p class="muted">Adjust rounds, initial price, and initial marketing, then run. This version also includes a competitor, influencer buzz, supplier cost, investor confidence, and market trend. Everything runs client-side on GitHub Pages.</p>
 
-  /* optional alternating table row colors */
-  #summary tbody tr:nth-child(odd) {
-    background-color: rgba(255,255,255,0.05);
-  }
-</style>
-  label { font-size:14px; opacity:.9; display:block; margin-bottom:6px; }
-  input[type="range"] { width:100%; }
-  button { background:#2563eb; color:#fff; border:0; padding:10px 14px; border-radius:10px; cursor:pointer; }
-  button:hover { filter:brightness(1.1); }
-  table { width:100%; border-collapse: collapse; margin-top:10px; }
-  td, th { padding:8px; border-bottom:1px solid #1f2937; text-align:left; }
-  h1 { font-size:24px; margin:0 0 12px 0; color:#111827; }
-  .muted { color:#6b7280; font-size:13px; }
-</style>
+    <!-- Controls + Last Round Summary -->
+    <div class="panel">
+      <div class="card">
+        <div class="row">
+          <div style="flex:1">
+            <label>Rounds: <span id="roundsVal">12</span></label>
+            <input id="rounds" type="range" min="5" max="60" value="12" oninput="roundsVal.textContent=this.value">
+          </div>
+          <div style="flex:1">
+            <label>Start Price: <span id="priceVal">9.5</span></label>
+            <input id="startPrice" type="range" min="3" max="25" step="0.1" value="9.5" oninput="priceVal.textContent=this.value">
+          </div>
+        </div>
 
-<div class="wrap">
-  <h1>Sequential Consumer Game (Browser Version)</h1>
-  <p class="muted">Adjust rounds, initial price, and initial marketing. Click <b>Run</b> to simulate two segments (price-sensitive & brand-loyal). All code runs client-side on your GitHub Pages.</p>
+        <div class="row">
+          <div style="flex:1">
+            <label>Start Marketing: <span id="mktVal">0.60</span></label>
+            <input id="startMkt" type="range" min="0" max="1" step="0.01" value="0.60" oninput="mktVal.textContent=this.value">
+          </div>
+          <div>
+            <button onclick="runSim()">Run Simulation</button>
+          </div>
+        </div>
 
-  <div class="panel">
-    <div class="card">
-      <label>Rounds: <span id="roundsVal">12</span></label>
-      <input id="rounds" type="range" min="5" max="50" value="12" oninput="roundsVal.textContent=this.value">
-      <label>Start Price: <span id="priceVal">9.5</span></label>
-      <input id="startPrice" type="range" min="3" max="20" step="0.1" value="9.5" oninput="priceVal.textContent=this.value">
-      <label>Start Marketing: <span id="mktVal">0.60</span></label>
-      <input id="startMkt" type="range" min="0" max="1" step="0.01" value="0.60" oninput="mktVal.textContent=this.value">
-      <div style="margin-top:12px"><button onclick="runSim()">Run Simulation</button></div>
+        <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+
+        <!-- Role toggles -->
+        <div class="row">
+          <div class="switch">
+            <input type="checkbox" id="useCompetitor" checked>
+            <label for="useCompetitor">Competitor (price competition)</label>
+          </div>
+          <div>
+            <label>Competitor Intensity</label>
+            <input id="compIntensity" type="range" min="0" max="0.08" step="0.005" value="0.04">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="switch">
+            <input type="checkbox" id="useInfluencer" checked>
+            <label for="useInfluencer">Influencer buzz</label>
+          </div>
+          <div>
+            <label>Buzz Strength</label>
+            <input id="buzzStrength" type="range" min="0" max="0.3" step="0.01" value="0.15">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="switch">
+            <input type="checkbox" id="useSupplier" checked>
+            <label for="useSupplier">Supplier cost</label>
+          </div>
+          <div>
+            <label>Mean Cost</label>
+            <input id="supplierMean" type="number" step="0.1" value="1.0">
+          </div>
+          <div>
+            <label>Volatility</label>
+            <input id="supplierVol" type="number" step="0.05" value="0.2">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="switch">
+            <input type="checkbox" id="useInvestor" checked>
+            <label for="useInvestor">Investor confidence feedback</label>
+          </div>
+          <div>
+            <label>Confidence decay</label>
+            <input id="confDecay" type="range" min="0" max="0.2" step="0.01" value="0.05">
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="switch">
+            <input type="checkbox" id="useTrend" checked>
+            <label for="useTrend">Market trend shocks</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <b>Last Round Summary</b>
+        <table id="summary">
+          <thead><tr><th>Metric</th><th>Value</th></tr></thead>
+          <tbody></tbody>
+        </table>
+      </div>
     </div>
 
-    <div class="card">
-      <b>Last Round Summary</b>
-      <table id="summary">
-        <thead><tr><th>Metric</th><th>Value</th></tr></thead>
-        <tbody></tbody>
-      </table>
+    <!-- Chart -->
+    <div id="chartWrap"><canvas id="chart" height="140"></canvas></div>
+
+    <div class="card" style="margin-top:14px">
+      <details>
+        <summary><b>About the model</b></summary>
+        <p class="muted">
+          Demand per segment: <code>P(buy)=base + mktSens*effectiveMarketing - priceSens*(price - competitorPriceAdj) + trendEffect</code>. 
+          Profit: <code>(price - supplierCost) * totalBuyers - 50*marketing</code>. Investor confidence reduces marketing when profit is below recent average.
+        </p>
+      </details>
     </div>
   </div>
 
-  <div class="card">
-    <canvas id="chart" height="120"></canvas>
-  </div>
+  <script>
+    // ---------- Helpers ----------
+    const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
+    const rand = (a,b) => Math.random()*(b-a)+a;
+    const choice = arr => arr[Math.floor(Math.random()*arr.length)];
 
-  <div class="card">
-    <details>
-      <summary><b>About the model</b></summary>
-      <p class="muted">Per round the retailer nudges price (±0.3) and marketing (±0.05). Segment A has higher price sensitivity and marketing response than Segment B. Profit = price × total buyers − 50 × marketing.</p>
-    </details>
-  </div>
-</div>
-
-<script>
-  // --- Small random helper for reproducibility toggle if needed
-  function rand(min, max) { return Math.random() * (max - min) + min; }
-
-  class Segment {
-    constructor(name, priceSens, mktSens, base=0.3) {
-      this.name = name; this.priceSens = priceSens; this.mktSens = mktSens; this.base = base;
-    }
-    buyProb(price, marketing) {
-      const p = this.base + this.mktSens * marketing - this.priceSens * price;
-      return Math.max(0, Math.min(1, p));
-    }
-  }
-
-  function simulate({ rounds, startPrice, startMkt }) {
-    const segA = new Segment("A (price-sensitive)", 0.05, 0.15, 0.25);
-    const segB = new Segment("B (brand-loyal)",     0.02, 0.08, 0.35);
-    const segments = [segA, segB];
-
-    let price = startPrice, marketing = startMkt;
-    const out = { price: [], marketing: [], buyers: [], profit: [], perSeg: [] };
-
-    for (let t = 1; t <= rounds; t++) {
-      price = Math.max(1, price + rand(-0.3, 0.3));
-      marketing = Math.max(0, Math.min(1, marketing + rand(-0.05, 0.05)));
-
-      let total = 0; const segRows = [];
-      for (const seg of segments) {
-        const prob = seg.buyProb(price, marketing);
-        // 100 consumers per segment
-        let buyers = 0;
-        for (let i=0;i<100;i++) if (Math.random() < prob) buyers++;
-        total += buyers;
-        segRows.push({ name: seg.name, prob, buyers });
+    class Segment {
+      constructor(name, priceSens, mktSens, base=0.3){
+        this.name=name; this.priceSens=priceSens; this.mktSens=mktSens; this.base=base;
       }
-      const revenue = total * price;
-      const cost = marketing * 50;
-      const profit = revenue - cost;
-
-      out.price.push(price);
-      out.marketing.push(marketing);
-      out.buyers.push(total);
-      out.profit.push(profit);
-      out.perSeg.push(segRows);
+      buyProb(price, effMkt, relPricePenalty, trend){
+        const p = this.base + this.mktSens*effMkt - this.priceSens*relPricePenalty + trend;
+        return clamp(p,0,1);
+      }
     }
-    return out;
-  }
 
-  let chart;
-  function renderChart(data) {
-    const ctx = document.getElementById('chart').getContext('2d');
-    const labels = data.profit.map((_, i) => `Round ${i+1}`);
-    const ds = [
-      { label: 'Profit', data: data.profit, yAxisID: 'y' },
-      { label: 'Total Buyers', data: data.buyers, yAxisID: 'y1' }
-    ];
-    if (chart) chart.destroy();
-    chart = new Chart(ctx, {
-      type: 'line',
-      data: { labels, datasets: ds },
-      options: {
-        responsive: true,
-        interaction: { mode: 'index', intersect: false },
-        plugins: { legend: { position: 'top' } },
-        scales: {
-          y: { title: { display: true, text: 'Profit' } },
-          y1: { position: 'right', grid: { drawOnChartArea: false }, title: { display: true, text: 'Total Buyers' } }
+    function simulate(params){
+      const {
+        rounds, startPrice, startMkt,
+        useCompetitor, compIntensity,
+        useInfluencer, buzzStrength,
+        useSupplier, supplierMean, supplierVol,
+        useInvestor, confDecay,
+        useTrend
+      } = params;
+
+      // Consumers: A = more price-sensitive; B = more loyal
+      const segA = new Segment("A (price-sensitive)", 0.05, 0.15, 0.25);
+      const segB = new Segment("B (brand-loyal)",     0.02, 0.08,  0.35);
+      const segments=[segA, segB];
+
+      let price=startPrice, marketing=startMkt;
+      let competitorPrice = startPrice + rand(-0.5,0.5);
+      let investorConf = 1.0;
+      let totalBuyersPrev = 0;
+
+      const out = { price:[], marketing:[], profit:[], buyers:[], perSeg:[], compPrice:[], invConf:[], suppCost:[], trend:[] };
+
+      const trendMap = { boom: +0.05, stable: 0.0, recession: -0.10 };
+      const profitWindow=[];
+
+      for(let t=1;t<=rounds;t++){
+        // --- environment / shocks
+        const trendState = useTrend ? choice(["boom","stable","recession"]) : "stable";
+        const trendEffect = trendMap[trendState];
+
+        // --- firm + competitor small moves
+        price = clamp(price + rand(-0.3,0.3), 1, 999);
+        marketing = clamp(marketing + rand(-0.05,0.05), 0, 1);
+
+        if(useCompetitor){
+          competitorPrice = clamp(competitorPrice + rand(-0.25,0.25), 1, 999);
         }
+
+        // influencer effective marketing boost based on last round buyers
+        const effMarketing = useInfluencer ? clamp(marketing + buzzStrength*(totalBuyersPrev/200), 0, 2) : marketing;
+
+        // supplier cost draw
+        const supplierCost = useSupplier ? clamp(supplierMean + rand(-supplierVol, supplierVol), 0, 10) : 0;
+
+        // demand
+        let total=0; const segRows=[];
+        for(const seg of segments){
+          const relPricePenalty = useCompetitor ? (price - competitorPrice)* (1 + compIntensity*10) : price; // stronger penalty when competitor cheaper
+          const prob = seg.buyProb(price, effMarketing, relPricePenalty, trendEffect);
+          let buyers=0; for(let i=0;i<100;i++){ if(Math.random()<prob) buyers++; }
+          segRows.push({ name:seg.name, prob, buyers });
+          total += buyers;
+        }
+
+        // profit
+        const revenue = total * price;
+        const mktCost = 50 * marketing;
+        const profit = (revenue - mktCost) - (supplierCost * total);
+
+        // investor feedback
+        profitWindow.push(profit); if(profitWindow.length>5) profitWindow.shift();
+        const avgProfit = profitWindow.reduce((a,b)=>a+b,0)/profitWindow.length;
+        if(useInvestor && profit < avgProfit){
+          investorConf = clamp(investorConf - confDecay, 0.6, 1.2);
+          marketing = clamp(marketing * investorConf, 0, 1);
+        } else {
+          investorConf = clamp(investorConf + confDecay*0.3, 0.6, 1.2);
+        }
+
+        // record
+        out.price.push(price); out.marketing.push(marketing); out.profit.push(profit);
+        out.buyers.push(total); out.perSeg.push(segRows);
+        out.compPrice.push(competitorPrice); out.invConf.push(investorConf);
+        out.suppCost.push(supplierCost); out.trend.push(trendState);
+
+        totalBuyersPrev = total;
       }
-    });
-  }
-
-  function renderSummary(data) {
-    const tBody = document.querySelector('#summary tbody');
-    tBody.innerHTML = '';
-    const n = data.profit.length - 1;
-
-    const last = [
-      ['Round', (n+1)],
-      ['Price', data.price[n].toFixed(2)],
-      ['Marketing', data.marketing[n].toFixed(2)],
-      ['Total Buyers', data.buyers[n]],
-      ['Profit', data.profit[n].toFixed(2)],
-      ['Seg A: P(buy), buyers', `${data.perSeg[n][0].prob.toFixed(2)}, ${data.perSeg[n][0].buyers}/100`],
-      ['Seg B: P(buy), buyers', `${data.perSeg[n][1].prob.toFixed(2)}, ${data.perSeg[n][1].buyers}/100`],
-    ];
-    for (const [k,v] of last) {
-      const tr = document.createElement('tr');
-      tr.innerHTML = `<td>${k}</td><td>${v}</td>`;
-      tBody.appendChild(tr);
+      return out;
     }
-  }
 
-  function runSim() {
-    const rounds = +document.getElementById('rounds').value;
-    const startPrice = +document.getElementById('startPrice').value;
-    const startMkt = +document.getElementById('startMkt').value;
-    const result = simulate({ rounds, startPrice, startMkt });
-    renderChart(result);
-    renderSummary(result);
-  }
+    // ---------- Rendering ----------
+    let chart;
+    function renderChart(data){
+      const ctx = document.getElementById('chart').getContext('2d');
+      const labels = data.profit.map((_,i)=>`Round ${i+1}`);
+      const ds = [
+        { label:"Profit", data:data.profit, yAxisID:'y' },
+        { label:"Total Buyers", data:data.buyers, yAxisID:'y1' },
+      ];
+      if(chart) chart.destroy();
+      chart = new Chart(ctx,{
+        type:'line',
+        data:{ labels, datasets: ds },
+        options:{
+          responsive:true, interaction:{ mode:'index', intersect:false },
+          plugins:{ legend:{ position:'top' } },
+          scales:{
+            y:{ title:{ display:true, text:'Profit' } },
+            y1:{ position:'right', grid:{ drawOnChartArea:false }, title:{ display:true, text:'Total Buyers' } }
+          }
+        }
+      });
+    }
 
-  // Auto-run once on load
-  window.addEventListener('DOMContentLoaded', runSim);
-</script>
+    function renderSummary(data){
+      const tbody = document.querySelector('#summary tbody'); tbody.innerHTML='';
+      const n = data.profit.length-1;
+      const rows = [
+        ['Round', (n+1)],
+        ['Price', data.price[n].toFixed(2)],
+        ['Competitor Price', data.compPrice[n].toFixed(2)],
+        ['Marketing', data.marketing[n].toFixed(2)],
+        ['Supplier Cost', data.suppCost[n].toFixed(2)],
+        ['Investor Confidence', data.invConf[n].toFixed(2)],
+        ['Market Trend', data.trend[n]],
+        ['Total Buyers', data.buyers[n]],
+        ['Profit', data.profit[n].toFixed(2)],
+        ['Seg A: P(buy), buyers', `${data.perSeg[n][0].prob.toFixed(2)}, ${data.perSeg[n][0].buyers}/100`],
+        ['Seg B: P(buy), buyers', `${data.perSeg[n][1].prob.toFixed(2)}, ${data.perSeg[n][1].buyers}/100`],
+      ];
+      for(const [k,v] of rows){
+        const tr=document.createElement('tr'); tr.innerHTML=`<th>${k}</th><td>${v}</td>`; tbody.appendChild(tr);
+      }
+    }
+
+    function runSim(){
+      const params = {
+        rounds: +document.getElementById('rounds').value,
+        startPrice: +document.getElementById('startPrice').value,
+        startMkt: +document.getElementById('startMkt').value,
+        useCompetitor: document.getElementById('useCompetitor').checked,
+        compIntensity: +document.getElementById('compIntensity').value,
+        useInfluencer: document.getElementById('useInfluencer').checked,
+        buzzStrength: +document.getElementById('buzzStrength').value,
+        useSupplier: document.getElementById('useSupplier').checked,
+        supplierMean: +document.getElementById('supplierMean').value,
+        supplierVol: +document.getElementById('supplierVol').value,
+        useInvestor: document.getElementById('useInvestor').checked,
+        confDecay: +document.getElementById('confDecay').value,
+        useTrend: document.getElementById('useTrend').checked,
+      };
+      const result = simulate(params);
+      renderChart(result);
+      renderSummary(result);
+    }
+
+    // auto-run on load
+    window.addEventListener('DOMContentLoaded', runSim);
+  </script>
+</body>
+</html>
+
 
 
   <footer>
