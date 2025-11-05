@@ -263,13 +263,101 @@
     </div>
 
     <div class="card" style="margin-top:14px">
-      <details>
-        <summary><b>About the model</b></summary>
-        <p class="muted">
-          Demand per segment: <code>P(buy)=base + mktSens*effectiveMarketing - priceSens*(price - competitorPriceAdj) + trendEffect</code>. 
-          Profit: <code>(price - supplierCost) * totalBuyers - 50*marketing</code>. Investor confidence reduces marketing when profit is below recent average.
-        </p>
-      </details>
+      <details open>
+  <summary><b>About the model</b></summary>
+
+  <h4>1) Core idea</h4>
+  <p>
+    A retailer chooses <i>price</i> and <i>marketing</i> each round. Two consumer segments (A: price-sensitive, B: brand-loyal) decide to buy.
+    Optional roles—Competitor, Influencer Buzz, Supplier Cost, Investor Confidence, and Market Trend—modify demand or costs.
+  </p>
+
+  <h4>2) Equations (per round)</h4>
+  <pre style="white-space:pre-wrap">
+Demand per segment:
+  P(buy) = base + mktSens * effectiveMarketing − priceSens * (price − competitorAdj) + trendEffect
+  0 ≤ P(buy) ≤ 1   (clamped)
+
+Buyers per segment ≈ Binomial(100, P(buy))   →  TotalBuyers = buyers_A + buyers_B
+
+Profit:
+  Profit = (price − supplierCost) * TotalBuyers − 50 * marketing
+
+Competitor adjustment (if enabled):
+  competitorAdj = competitorPrice * (1 + compIntensity * 10)
+  (Stronger intensity magnifies the penalty for pricing above the competitor.)
+
+Influencer buzz (if enabled):
+  effectiveMarketing = marketing + buzzStrength * (TotalBuyers(previous round) / 200)
+
+Supplier cost (if enabled):
+  supplierCost ~ mean(supplierMean) ± supplierVol   (clamped ≥ 0)
+
+Investor confidence (if enabled):
+  If profit < recent 5-round average → confidence decreases → marketing scaled down.
+  Else confidence edges up slightly.
+
+Market trend (if enabled):
+  trendEffect ∈ { boom:+0.05, stable:0.00, recession:−0.10 } drawn each round.
+  </pre>
+
+  <h4>3) Roles and intuition</h4>
+  <ul>
+    <li><b>Competitor</b>: increases demand penalty when your price exceeds theirs; higher <code>compIntensity</code> → higher price sensitivity.</li>
+    <li><b>Influencer Buzz</b>: converts last round’s buyers into extra “free marketing.” Good performance can snowball (but variance rises).</li>
+    <li><b>Supplier Cost</b>: random per round; higher mean/volatility compress margins and widens the profit spread.</li>
+    <li><b>Investor Confidence</b>: adaptive brake on marketing after weak profit; narrows downside but can mute rebounds.</li>
+    <li><b>Market Trend</b>: boom/recession shocks shift demand baseline and add macro volatility.</li>
+  </ul>
+
+  <h4>4) Reading the charts</h4>
+  <ul>
+    <li><b>Main chart</b>: Profit & Total Buyers over time for one run (shows path-dependence/volatility).</li>
+    <li><b>Round Analyzer</b>: Pick a round and see ΔProfit/ΔBuyers vs others to diagnose highs/lows.</li>
+    <li><b>Monte Carlo (Mean ± 1σ)</b>: Repeats the same settings many times; plots mean profit per round with an uncertainty band.
+      Tiles show the distribution of <i>average profit per run</i> (mean, std, 5–95%).</li>
+    <li><b>Sensitivity</b>: Sweeps one role at a time (low/mid/high) and compares average profit across many runs.</li>
+  </ul>
+
+  <h4>5) Insights from multiple runs</h4>
+  <ul>
+    <li><b>Competition</b>: Higher <code>compIntensity</code> lowers mean profit and raises variance unless price stays close to the competitor.</li>
+    <li><b>Marketing & Buzz</b>: There’s a sweet spot—marketing has cost (≈ 50×marketing). With buzz, the mean often rises but the σ band widens.</li>
+    <li><b>Cost structure</b>: Raising <code>supplierMean</code> shifts profit downward nearly one-for-one; higher <code>supplierVol</code> inflates risk.</li>
+    <li><b>Investor confidence</b>: Usually tightens the distribution (lower σ) by cutting marketing after weak rounds; peaks may be slightly lower.</li>
+    <li><b>Trend shocks</b>: Add macro noise—boom improves profit, recession lowers it; turning trend OFF helps isolate policy changes.</li>
+  </ul>
+
+  <h4>6) Practical tuning workflow</h4>
+  <ol>
+    <li>Pick a baseline → run <b>Monte Carlo</b> (e.g., R=60). Note Mean, σ, 5–95% of average profit.</li>
+    <li>Use <b>Sensitivity</b> to find promising levers:
+      <ul>
+        <li>Reduce price gap or <code>compIntensity</code> to soften competition effects.</li>
+        <li>Test <code>buzzStrength</code> for upside vs variance trade-off.</li>
+        <li>Lower <code>supplierMean/Vol</code> if possible.</li>
+        <li>Tune <code>confDecay</code> to balance stability vs agility.</li>
+      </ul>
+    </li>
+    <li>Lock a candidate setup → re-run <b>Monte Carlo</b> to confirm it’s robust (higher mean and/or tighter band).</li>
+    <li>Use <b>Round Analyzer</b> to explain outliers (price, marketing, supplier cost, trend).</li>
+  </ol>
+
+  <h4>7) What “good” looks like</h4>
+  <p>
+    Prefer settings that raise the Monte Carlo <b>mean</b> while not exploding the <b>σ</b>.  
+    If means are similar, choose the tighter band (lower downside risk).
+  </p>
+
+  <h4>8) Limits</h4>
+  <ul>
+    <li>Reduced-form demand (two segments, linear effects, clamping).</li>
+    <li>Competitor/trend are exogenous (no full strategic learning/equilibrium).</li>
+    <li>Buzz & confidence are simplified feedbacks without lags/saturation.</li>
+  </ul>
+</details>
+
+       
     </div>
   </div>
 
