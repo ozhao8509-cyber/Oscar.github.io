@@ -196,8 +196,21 @@
       </div>
     </div>
 
-    <!-- Chart -->
+    <!-- Main Chart -->
     <div id="chartWrap"><canvas id="chart" height="140"></canvas></div>
+
+    <!-- Sensitivity Analysis -->
+    <div class="card" style="margin-top:14px">
+      <div class="row" style="justify-content:space-between;">
+        <div><b>Sensitivity Analysis</b></div>
+        <div class="muted">Runs multiple simulations to estimate average profit when each role’s parameter is varied (low/mid/high).</div>
+      </div>
+      <div class="row" style="margin-top:10px">
+        <button onclick="runSensitivity()">Run Sensitivity</button>
+        <div class="muted">Averages 20 runs per scenario for stability.</div>
+      </div>
+      <div id="chartWrap" style="margin-top:10px"><canvas id="sensChart" height="140"></canvas></div>
+    </div>
 
     <div class="card" style="margin-top:14px">
       <details>
@@ -215,6 +228,7 @@
     const clamp = (x, lo, hi) => Math.max(lo, Math.min(hi, x));
     const rand = (a,b) => Math.random()*(b-a)+a;
     const choice = arr => arr[Math.floor(Math.random()*arr.length)];
+    const mean = arr => arr.reduce((a,b)=>a+b,0) / (arr.length || 1);
 
     class Segment {
       constructor(name, priceSens, mktSens, base=0.3){
@@ -236,7 +250,7 @@
         useTrend
       } = params;
 
-      // Consumers: A = more price-sensitive; B = more loyal
+      // Consumers
       const segA = new Segment("A (price-sensitive)", 0.05, 0.15, 0.25);
       const segB = new Segment("B (brand-loyal)",     0.02, 0.08,  0.35);
       const segments=[segA, segB];
@@ -265,15 +279,15 @@
         }
 
         // influencer effective marketing boost based on last round buyers
-        const effMarketing = useInfluencer ? clamp(marketing + buzzStrength*(totalBuyersPrev/200), 0, 2) : marketing;
+        const effMarketing = useInfluencer ? clamp(marketing + (+document.getElementById('buzzStrength').value)*(totalBuyersPrev/200), 0, 2) : marketing;
 
         // supplier cost draw
-        const supplierCost = useSupplier ? clamp(supplierMean + rand(-supplierVol, supplierVol), 0, 10) : 0;
+        const supplierCost = useSupplier ? clamp(+document.getElementById('supplierMean').value + rand(-(+document.getElementById('supplierVol').value), (+document.getElementById('supplierVol').value)), 0, 10) : 0;
 
         // demand
         let total=0; const segRows=[];
         for(const seg of segments){
-          const relPricePenalty = useCompetitor ? (price - competitorPrice)* (1 + compIntensity*10) : price; // stronger penalty when competitor cheaper
+          const relPricePenalty = useCompetitor ? (price - competitorPrice)* (1 + (+document.getElementById('compIntensity').value)*10) : price;
           const prob = seg.buyProb(price, effMarketing, relPricePenalty, trendEffect);
           let buyers=0; for(let i=0;i<100;i++){ if(Math.random()<prob) buyers++; }
           segRows.push({ name:seg.name, prob, buyers });
@@ -287,12 +301,14 @@
 
         // investor feedback
         profitWindow.push(profit); if(profitWindow.length>5) profitWindow.shift();
-        const avgProfit = profitWindow.reduce((a,b)=>a+b,0)/profitWindow.length;
+        const avgProfit = mean(profitWindow);
         if(useInvestor && profit < avgProfit){
-          investorConf = clamp(investorConf - confDecay, 0.6, 1.2);
+          const decay = +document.getElementById('confDecay').value;
+          investorConf = clamp(investorConf - decay, 0.6, 1.2);
           marketing = clamp(marketing * investorConf, 0, 1);
         } else {
-          investorConf = clamp(investorConf + confDecay*0.3, 0.6, 1.2);
+          const decay = +document.getElementById('confDecay').value;
+          investorConf = clamp(investorConf + decay*0.3, 0.6, 1.2);
         }
 
         // record
@@ -306,8 +322,8 @@
       return out;
     }
 
-    // ---------- Rendering ----------
-    let chart;
+    // ---------- Rendering (main run) ----------
+    let chart, sensChart;
     function renderChart(data){
       const ctx = document.getElementById('chart').getContext('2d');
       const labels = data.profit.map((_,i)=>`Round ${i+1}`);
@@ -351,8 +367,8 @@
       }
     }
 
-    function runSim(){
-      const params = {
+    function collectParamsFromUI(){
+      return {
         rounds: +document.getElementById('rounds').value,
         startPrice: +document.getElementById('startPrice').value,
         startMkt: +document.getElementById('startMkt').value,
@@ -367,9 +383,99 @@
         confDecay: +document.getElementById('confDecay').value,
         useTrend: document.getElementById('useTrend').checked,
       };
+    }
+
+    function runSim(){
+      const params = collectParamsFromUI();
       const result = simulate(params);
       renderChart(result);
       renderSummary(result);
+    }
+
+    // ---------- Sensitivity Analysis ----------
+    function simulateAvgProfit(params, repeats=20){
+      const profits = [];
+      for(let i=0;i<repeats;i++){
+        const r = simulate(params);
+        profits.push( mean(r.profit) );  // average across rounds
+      }
+      return mean(profits);
+    }
+
+    function runSensitivity(){
+      const base = collectParamsFromUI();
+
+      // define low/mid/high values per role
+      const compVals = [0.00, 0.04, 0.08];
+      const buzzVals = [0.00, 0.15, 0.30];
+      const suppMeanVals = [0.6, 1.0, 1.4];
+      const invDecayVals = [0.00, 0.05, 0.10];
+      const trendVals = [false, true]; // off / on
+
+      const labels = [];
+      const values = [];
+
+      // competitor intensity sweep
+      compVals.forEach(v=>{
+        const p = { ...base, useCompetitor:true, compIntensity:v };
+        labels.push(`Competitor ${v.toFixed(2)}`);
+        values.push( simulateAvgProfit(p, 20) );
+      });
+
+      // influencer buzz sweep
+      buzzVals.forEach(v=>{
+        const p = { ...base, useInfluencer:true };
+        document.getElementById('buzzStrength').value = v; // used by simulate()
+        labels.push(`Influencer ${v.toFixed(2)}`);
+        values.push( simulateAvgProfit(p, 20) );
+      });
+
+      // supplier mean cost sweep
+      suppMeanVals.forEach(v=>{
+        const p = { ...base, useSupplier:true };
+        document.getElementById('supplierMean').value = v; // used by simulate()
+        labels.push(`Supplier Mean ${v.toFixed(1)}`);
+        values.push( simulateAvgProfit(p, 20) );
+      });
+
+      // investor decay sweep
+      invDecayVals.forEach(v=>{
+        const p = { ...base, useInvestor:true };
+        document.getElementById('confDecay').value = v; // used by simulate()
+        labels.push(`Investor Decay ${v.toFixed(2)}`);
+        values.push( simulateAvgProfit(p, 20) );
+      });
+
+      // trend on/off sweep
+      trendVals.forEach(v=>{
+        const p = { ...base, useTrend:v };
+        labels.push(`Trend ${v ? 'On' : 'Off'}`);
+        values.push( simulateAvgProfit(p, 20) );
+      });
+
+      // restore UI readouts (optional re-sync)
+      document.getElementById('buzzStrength').value = base.buzzStrength;
+      document.getElementById('supplierMean').value = base.supplierMean;
+      document.getElementById('confDecay').value = base.confDecay;
+
+      // render bar chart
+      const ctx = document.getElementById('sensChart').getContext('2d');
+      if(sensChart) sensChart.destroy();
+      sensChart = new Chart(ctx, {
+        type:'bar',
+        data:{
+          labels,
+          datasets:[{ label:'Average Profit (across rounds & runs)', data: values }]
+        },
+        options:{
+          responsive:true,
+          plugins:{ legend:{ display:true, position:'top' } },
+          scales:{
+            y:{ title:{ display:true, text:'Average Profit' } },
+            x:{ ticks:{ maxRotation: 70, minRotation: 0 } }
+          }
+        }
+      });
     }
 
     // auto-run on load
@@ -377,6 +483,7 @@
   </script>
 </body>
 </html>
+
 
 
 
