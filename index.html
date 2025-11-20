@@ -751,6 +751,220 @@
   </script>
 </body>
 </html>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Game Logic Visualizer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <script type="module">
+    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+    mermaid.initialize({ startOnLoad: true, theme: 'base', themeVariables: { fontFamily: 'ui-sans-serif' } });
+  </script>
+
+  <style>
+    :root{
+      --bg:#f7f7f7; --ink:#111827; --muted:#6b7280; --card:#ffffff; --line:#e5e7eb;
+      --accent:#2563eb; --accent-light:#dbeafe; --success:#10b981; --danger:#ef4444; --warn:#f59e0b;
+    }
+    body{ margin:0; background:var(--bg); color:var(--ink); font-family: ui-sans-serif, system-ui, sans-serif; }
+    .wrap{ max-width: 1000px; margin: 40px auto; padding: 0 20px; }
+    
+    h1{ font-size: 32px; margin-bottom: 8px; letter-spacing: -0.02em; }
+    h2{ font-size: 22px; margin-top: 30px; border-bottom: 1px solid var(--line); padding-bottom: 10px; }
+    p.intro{ color: var(--muted); font-size: 18px; margin-top:0; }
+    
+    /* Card Styling */
+    .card{
+      background:var(--card); padding:24px; border-radius:12px;
+      box-shadow:0 4px 12px rgba(0,0,0,0.05); border:1px solid var(--line);
+      margin-bottom: 24px;
+    }
+
+    /* Grid for Actor Cards */
+    .grid-actors{ display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-top: 20px; }
+    .actor-card{
+      border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: #fafafa;
+      border-left: 4px solid var(--accent);
+    }
+    .actor-card h3{ margin: 0 0 8px 0; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+    .actor-card p{ margin: 0; font-size: 14px; color: var(--muted); line-height: 1.5; }
+    .tag{ font-size: 10px; text-transform: uppercase; padding: 2px 6px; border-radius: 4px; font-weight: 700; letter-spacing: 0.05em; }
+    
+    /* Specific colors for actors */
+    .act-comp{ border-left-color: var(--danger); } .act-comp .tag{ background: #fee2e2; color: var(--danger); }
+    .act-inf{ border-left-color: var(--accent); } .act-inf .tag{ background: var(--accent-light); color: var(--accent); }
+    .act-inv{ border-left-color: var(--warn); } .act-inv .tag{ background: #fef3c7; color: var(--warn); }
+    .act-sup{ border-left-color: var(--muted); } .act-sup .tag{ background: #f3f4f6; color: var(--muted); }
+
+    /* Diagram Container */
+    .diagram-container{
+      display: flex; justify-content: center; background: #fff; 
+      border-radius: 8px; overflow: hidden; padding: 20px 0;
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+
+  <h1>Game Logic Explainer</h1>
+  <p class="intro">A visual guide to understanding the connections in the Sequential Consumer Game.</p>
+
+  <div class="card">
+    <b>1. The Ecosystem Structure (Mindmap)</b>
+    <p style="color:var(--muted); margin-bottom:20px">This map shows the four main pillars of your simulation: Inputs, External Forces, The Consumer Brain, and Analytics.</p>
+    
+    <div class="diagram-container">
+      <pre class="mermaid">
+mindmap
+  root((Consumer Game))
+    Inputs
+      Start Price
+      Start Marketing
+      Rounds
+    Market Forces
+      Competitors
+        (Price War)
+      Influencers
+        (Buzz Loop)
+      Suppliers
+        (Cost Volatility)
+      Investors
+        (Budget Control)
+      Trends
+        (Boom/Recession)
+    Consumer Brain
+      Segment A
+        (Price Sensitive)
+      Segment B
+        (Brand Loyal)
+    Analytics
+      Main Chart
+      Monte Carlo
+      Sensitivity
+      </pre>
+    </div>
+  </div>
+
+  <h2>2. The Agents & Market Forces</h2>
+  <p style="color:var(--muted)">Your game isn't static. These 5 agents actively change the variables every round.</p>
+  
+  <div class="grid-actors">
+    <div class="actor-card act-comp">
+      <h3>Competitor <span class="tag">Adversary</span></h3>
+      <p><strong>Logic:</strong> They watch your price. If you go high, they undercut you.<br><br>
+      <strong>Impact:</strong> Creates a "Price Penalty." If they are cheaper, price-sensitive buyers abandon you.</p>
+    </div>
+
+    <div class="actor-card act-inf">
+      <h3>Influencer <span class="tag">Booster</span></h3>
+      <p><strong>Logic:</strong> Triggered by previous sales. High sales yesterday = High Buzz today.<br><br>
+      <strong>Impact:</strong> Adds a free bonus to your "Effective Marketing" stat.</p>
+    </div>
+
+    <div class="actor-card act-inv">
+      <h3>Investor <span class="tag">Regulator</span></h3>
+      <p><strong>Logic:</strong> Compares current profit to your average. If you underperform, they panic.<br><br>
+      <strong>Impact:</strong> They force-cut your marketing budget, creating a "death spiral" risk.</p>
+    </div>
+
+    <div class="actor-card act-sup">
+      <h3>Supplier <span class="tag">Volatility</span></h3>
+      <p><strong>Logic:</strong> Randomly fluctuates the cost of goods sold (COGS).<br><br>
+      <strong>Impact:</strong> Can ruin a high-sales round by eating up all the profit margin unexpectedly.</p>
+    </div>
+
+    <div class="actor-card" style="border-left-color:#10b981">
+      <h3>Market Trend <span class="tag" style="background:#d1fae5;color:#10b981">Environment</span></h3>
+      <p><strong>Logic:</strong> Randomly sets the world to Boom, Stable, or Recession.<br><br>
+      <strong>Impact:</strong> A global modifier that increases or decreases buying probability for everyone.</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:24px;">
+    <b>3. The Logic Loop (Sequence of Events)</b>
+    <p style="color:var(--muted); margin-bottom:20px">What actually happens inside the code when you click "Run"? This flowchart traces the data path for a single round.</p>
+
+    <div class="diagram-container">
+      <pre class="mermaid">
+graph TD
+    %% Nodes
+    Start([Start Round])
+    
+    subgraph "1. World State"
+    Trend{Market Trend?}
+    Supp[Supplier Cost Set]
+    Comp[Competitor Price Set]
+    end
+
+    subgraph "2. Your Position"
+    Price[Your Price]
+    Mkt[Marketing Budget]
+    Buzz[Influencer Buzz]
+    EffMkt[Effective Marketing]
+    end
+
+    subgraph "3. Consumer Decision"
+    Math[Calculate Probability]
+    SegA[Segment A: Price Focused]
+    SegB[Segment B: Brand Focused]
+    Buy[Total Sales]
+    end
+
+    subgraph "4. Feedback Loops"
+    Profit[Calculate Profit]
+    InvCheck{Profit < Average?}
+    NextMkt[Investor Adjusts Next Budget]
+    NextBuzz[Sales Fuel Next Buzz]
+    end
+
+    %% Connections
+    Start --> Trend
+    Trend --> Math
+    Supp --> Profit
+    Comp --> Math
+
+    Mkt --> EffMkt
+    Buzz --> EffMkt
+    EffMkt --> Math
+    Price --> Math
+    
+    Math --> SegA & SegB
+    SegA & SegB --> Buy
+    Buy --> Profit
+    
+    Profit --> InvCheck
+    InvCheck -->|Yes| NextMkt
+    Buy --> NextBuzz
+
+    style Start fill:#f9f,stroke:#333
+    style Profit fill:#dbeafe,stroke:#2563eb
+    style Buy fill:#d1fae5,stroke:#10b981
+      </pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <b>4. The Consumer Math</b>
+    <p style="color:var(--muted)">How does the code decide if a customer buys? It uses a scoring formula.</p>
+    <div style="background:#f1f5f9; padding:15px; border-radius:8px; font-family:monospace; font-size:14px;">
+      P(Buy) = Base_Desire <br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ (Marketing × Sensitivity)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- (Price_Difference × Sensitivity)<br>
+      &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;+ Trend_Effect
+    </div>
+    <ul style="margin-top:15px; font-size:15px; line-height:1.6; color:var(--muted)">
+      <li><strong>Segment A:</strong> High price sensitivity (0.05), Low marketing sensitivity.</li>
+      <li><strong>Segment B:</strong> Low price sensitivity, High marketing sensitivity (0.08).</li>
+      <li><strong>Result:</strong> The code rolls a digital dice (0 to 1) against this probability 100 times per segment.</li>
+    </ul>
+  </div>
+
+</div>
+
+</body>
+</html>
 
   <h4>1) Core idea</h4>
   <p>
